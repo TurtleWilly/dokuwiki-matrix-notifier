@@ -1,1 +1,0 @@
-# DokuWiki Matrix Notifier
