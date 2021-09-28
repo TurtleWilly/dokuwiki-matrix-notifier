@@ -1,6 +1,10 @@
 # DokuWiki Matrix Notifier
 Notify DocuWiki page events via [Matrix](https://matrix.org/)
 
+## Example
+
+<img src="https://raw.githubusercontent.com/TurtleWilly/dokuwiki-matrix-notifier/master/documentation/example.png" alt="Example Notifications in Matrix" width="780" height="259" />
+
 ## Installation
 
 Drop the `matrixnotifier` directory under `lib/plugins/` in the DocuWiki installation. Alternatively zip the `matrixnotifier` directory and then use DocuWiki's *Extension Manager* (Admin menu) to do a manual installation.
