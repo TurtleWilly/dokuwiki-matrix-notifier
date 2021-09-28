@@ -3,11 +3,11 @@ Notify DocuWiki page events via Matrix
 
 ## Installation
 
-Drop the `matrixnotifier` directory under `lib/plugins/` in the DocuWiki installation. Alternatively zip the `matrixnotifier` directory and then use DocuWiki's Extension Manager (Admin menu) to do a manual installation.
+Drop the `matrixnotifier` directory under `lib/plugins/` in the DocuWiki installation. Alternatively zip the `matrixnotifier` directory and then use DocuWiki's *Extension Manager* (Admin menu) to do a manual installation.
 
 ## Configuration
 
-The plugin is configured via DocuWiki's Configuration Settings (Admin menu).
+The plugin is configured via DocuWiki's *Configuration Settings* (Admin menu).
 
 ### Required Settings
 
