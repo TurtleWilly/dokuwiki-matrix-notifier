@@ -137,12 +137,12 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 		);
 	}
 
-	private function _get_url($event = null, $Rev)
+	private function _get_url($event = null, $rev = null)
 	{
 		global $ID;
 		global $conf;
 
-		$oldRev = $event->data['oldRevision'];
+		// $oldRev = $event->data['oldRevision'];
 		$page   = $event->data['id'];
 
 		if ((($conf['userewrite'] == 1) || ($conf['userewrite'] == 2)) && $conf['useslash'] == true)
@@ -163,16 +163,16 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 				break;
 		}
 
-		if ($Rev != null)
+		if ($rev != null)
 		{
 			switch($conf['userewrite'])
 			{
 				case 0:
-					$url .= "&do=diff&rev={$Rev}";
+					$url .= "&do=diff&rev={$rev}";
 					break;
 				case 1:
 				case 2:
-					$url .= "?do=diff&rev={$Rev}";
+					$url .= "?do=diff&rev={$rev}";
 					break;
 			}
 		}
@@ -196,49 +196,56 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 		}
 
 		$homeserver = rtrim(trim($homeserver), '/');
-		$endpoint = $homeserver.'/_matrix/client/r0/rooms/'.$roomid.'/send/m.room.message/'.uniqid('docuwiki', true).'-'.md5(random_int(0, PHP_INT_MAX));
+		$endpoint = $homeserver.'/_matrix/client/r0/rooms/'.$roomid.'/send/m.room.message/'.uniqid('docuwiki', true).'-'.md5(strval(random_int(0, PHP_INT_MAX)));
 
-		$ch = curl_init($endpoint);
-
-		/*  Use a proxy, if defined
-		 *
-		 *  Note: entirely untested
-		 */
-		$proxy = $conf['proxy'];
-		if (!empty($proxy['host']))
+		$json_payload = json_encode($this->_payload);
+		if (!is_string($json_payload))
 		{
-			/* configure proxy address and port
-			 */
-			$proxyAddress = $proxy['host'].':'.$proxy['port'];
-			curl_setopt($ch, CURLOPT_PROXY,          $proxyAddress);
-			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-			/* include username and password if defined
-			 */
-			if (!empty($proxy['user']) && !empty($proxy['pass']))
-			{
-				$proxyAuth = $proxy['user'].':'.conf_decodeString($proxy['port']);
-				curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxyAuth );
-			}
+			return;
 		}
 
-		/* Submit Payload
-		 */
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-		$json_payload = json_encode($this->_payload);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-			'Content-type: application/json',
-			'Content-length: '.strlen($json_payload),
-			'User-agent: DocuWiki Matrix Notifier Plugin',  /* TODO: add some version information here? */
-			'Authorization: Bearer '.$accesstoken,
-			'Cache-control: no-cache',
-		));
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $json_payload);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_exec($ch);
-
-		curl_close($ch);
+		$ch = curl_init($endpoint);
+		if ($ch)
+		{
+			/*  Use a proxy, if defined
+			 *
+			 *  Note: entirely untested
+			 */
+			$proxy = $conf['proxy'];
+			if (!empty($proxy['host']))
+			{
+				/* configure proxy address and port
+				 */
+				$proxyAddress = $proxy['host'].':'.$proxy['port'];
+				curl_setopt($ch, CURLOPT_PROXY,          $proxyAddress);
+				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        	
+				/* include username and password if defined
+				 */
+				if (!empty($proxy['user']) && !empty($proxy['pass']))
+				{
+					$proxyAuth = $proxy['user'].':'.conf_decodeString($proxy['port']);
+					curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxyAuth );
+				}
+			}
+        	
+			/* Submit Payload
+			 */
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+				'Content-type: application/json',
+				'Content-length: '.strlen($json_payload),
+				'User-agent: DocuWiki Matrix Notifier Plugin',  /* TODO: add some version information here? */
+				'Authorization: Bearer '.$accesstoken,
+				'Cache-control: no-cache',
+			));
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $json_payload);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_exec($ch);
+        	
+			curl_close($ch);
+		}
 	}
 	
 	public function shouldBeSend($filename)
@@ -263,7 +270,7 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 			if ($this->set_event($event))
 			{
 				$this->set_payload_text($event);
-				$helper->submit_payload();
+				$this->submit_payload();
 			}
 		}
 	}
