@@ -3,7 +3,7 @@ Notify DocuWiki page events via [Matrix](https://matrix.org/)
 
 ## Example
 
-<img src="https://raw.githubusercontent.com/TurtleWilly/dokuwiki-matrix-notifier/master/documentation/example.png" alt="Example Notifications in Matrix" width="780" height="259" />
+<img width="780" height="259" src="https://raw.githubusercontent.com/TurtleWilly/dokuwiki-matrix-notifier/master/documentation/example.png">
 
 ## Installation
 
