@@ -6,51 +6,34 @@ if (!defined('DOKU_INC')) { die(); }
  *
  * @license GPL 2 (http://www.gnu.org/licenses/gpl-2.0.html)
  *
- * @author ?
  * @author Wilhelm/ JPTV.club
  */
 
 class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 {
-	var $_event = null;
-	var $_event_type = array(
-		'E' => 'edit',
-		'e' => 'edit minor',
-		'C' => 'create',
-		'D' => 'delete',
-		'R' => 'revert',  /* TODO: we don't seem to support this. */
-	);
-	var $_summary = null;
-	var $_payload = null;
+	private $_event   = null;
+	private $_summary = null;
+	private $_payload = null;
 
-	public function setPayload($payload)
+	private function valid_namespace()
 	{
-		$this->_payload = $payload;
-	}
+		global $INFO; /* TODO: yikes! */
 
-	public function attic_write($filename)
-	{
-		return (strpos($filename, 'data/attic') !== false);
-	}
-
-	public function valid_namespace()
-	{
-		global $INFO;
 		$validNamespaces = $this->getConf('namespaces');
 		if (!empty($validNamespaces))
 		{
-			$validNamespacesArr = explode(',', $validNamespaces);
+			$validNamespacesArr = array_map('trim', explode(',', $validNamespaces));
 			$thisNamespaceArr   = explode(':', $INFO['namespace']);
+
 			return in_array($thisNamespaceArr[0], $validNamespacesArr);
 		}
+
 		return true;
 	}
 
-	public function set_event($event)
+	private function check_event($event)
 	{
-		$this->_opt = print_r($event, true);
-		$changeType = $event->data['changeType'];
-		$event_type = $this->_event_type[$changeType];
+		$this->_opt = print_r($event, true); /* TODO: what is this required for exactly? */
 
 		$summary = $event->data['summary'];
 		if (!empty($summary))
@@ -58,38 +41,44 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 			$this->_summary = $summary;
 		}
 
-		if (($event_type == 'create') && ($this->getConf('notify_create') == 1))
+		$etype = $event->data['changeType'];
+		if (($etype == 'C') && ($this->getConf('notify_create') == 1))
 		{
 			$this->_event = 'create';
 			return true;
 		}
-		elseif (($event_type == 'edit') && ($this->getConf('notify_edit') == 1))
+		elseif (($etype == 'E') && ($this->getConf('notify_edit') == 1))
 		{
 			$this->_event = 'edit';
 			return true;
 		}
-		elseif (($event_type == 'edit minor') && ($this->getConf('notify_edit') == 1) && ($this->getConf('notify_edit_minor') == 1))
+		elseif (($etype == 'e') && ($this->getConf('notify_edit') == 1) && ($this->getConf('notify_edit_minor') == 1))
 		{
 			$this->_event = 'edit minor';
 			return true;
 		}
-		elseif (($event_type == 'delete') && ($this->getConf('notify_delete') == 1))
+		elseif (($etype == 'D') && ($this->getConf('notify_delete') == 1))
 		{
 			$this->_event = 'delete';
 			return true;
 		}
+		/*
+		elseif (($etype == 'R') && ($this->getConf('notify_revert') == 1))
+		{
+			$this->_event = 'revert';
+			return true;
+		}
+		*/
 
 		return false;
 	}
 
-	public function set_payload_text($event)
+	private function update_payload($event)
 	{
-		global $conf;
-		global $lang;
-		global $INFO;
+		global $INFO; /* TODO: yikes! -> pageinfo() ? */
 
 		$user = strip_tags($INFO['userinfo']['name']);
-		$link = $this->_get_url($event, null);
+		$link = $this->compose_url($event, null);
 		$page = strip_tags($event->data['id']);
 
 		$data = [
@@ -112,7 +101,7 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 
 			if (!empty($oldRev))
 			{
-				$diffURL     = $this->_get_url($event, $oldRev);
+				$diffURL     = $this->compose_url($event, $oldRev);
 				$descr_raw  .= ' ('.$this->getLang('compare').': '.$diffURL.')'; 
 				$descr_html .= ' (<a href="'.$diffURL.'">'.$this->getLang('compare').'</a>)';
 			}
@@ -137,23 +126,20 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 		);
 	}
 
-	private function _get_url($event = null, $rev = null)
+	private function compose_url($event = null, $rev = null)
 	{
-		global $ID;
-		global $conf;
+		$page       = $event->data['id'];
+		$userewrite = $this->getConf('userewrite');
 
-		// $oldRev = $event->data['oldRevision'];
-		$page   = $event->data['id'];
-
-		if ((($conf['userewrite'] == 1) || ($conf['userewrite'] == 2)) && $conf['useslash'] == true)
+		if ((($userewrite == 1) || ($userewrite == 2)) && $this->getConf('useslash') == true)
 		{
 			$page = str_replace(":", "/", $page);
 		}
 
-		switch($conf['userewrite'])
+		switch($userewrite)
 		{
 			case 0:
-				$url = DOKU_URL."doku.php?id={$page}";
+				$url = DOKU_URL."doku.php?id={$page}";  /* TODO: DOKU_URL usage */
 				break;
 			case 1:
 				$url = DOKU_URL.$page;
@@ -165,11 +151,10 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 
 		if ($rev != null)
 		{
-			switch($conf['userewrite'])
+			switch($userewrite)
 			{
 				case 0:
-					$url .= "&do=diff&rev={$rev}";
-					break;
+					$url .= "&do=diff&rev={$rev}"; break;
 				case 1:
 				case 2:
 					$url .= "?do=diff&rev={$rev}";
@@ -180,10 +165,8 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 		return $url;
 	}
 
-	public function submit_payload()
+	private function submit_payload()
 	{
-		global $conf;
-
 		$homeserver  = $this->getConf('homeserver');
 		$roomid      = $this->getConf('room');
 		$accesstoken = $this->getConf('accesstoken');
@@ -209,9 +192,10 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 		{
 			/*  Use a proxy, if defined
 			 *
-			 *  Note: entirely untested
+			 *  Note: still entirely untested, was full of very obvious bugs, so nobody
+			 *        has ever used this succesfully anyway
 			 */
-			$proxy = $conf['proxy'];
+			$proxy = $this->getConf('proxy');
 			if (!empty($proxy['host']))
 			{
 				/* configure proxy address and port
@@ -225,7 +209,7 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 				 */
 				if (!empty($proxy['user']) && !empty($proxy['pass']))
 				{
-					$proxyAuth = $proxy['user'].':'.conf_decodeString($proxy['port']);
+					$proxyAuth = $proxy['user'].':'.conf_decodeString($proxy['pass']);
 					curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxyAuth );
 				}
 			}
@@ -248,30 +232,12 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 		}
 	}
 	
-	public function shouldBeSend($filename)
-	{
-		if($this->attic_write($filename))
-		{
-			return false;
-		}
-
-		if(!$this->valid_namespace())
-		{
-			return false;
-		}
-
-		return true;
-	}
-
 	public function sendUpdate($event)
 	{
-		if ($this->shouldBeSend($event->data['file']))
+		if((strpos($event->data['file'], 'data/attic') === false) && $this->valid_namespace() && $this->check_event($event))
 		{
-			if ($this->set_event($event))
-			{
-				$this->set_payload_text($event);
-				$this->submit_payload();
-			}
+			$this->update_payload($event);
+			$this->submit_payload();
 		}
 	}
 }
