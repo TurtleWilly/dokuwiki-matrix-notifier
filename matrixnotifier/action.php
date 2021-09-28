@@ -20,7 +20,7 @@ class action_plugin_matrixnotifier extends \dokuwiki\Extension\ActionPlugin
 	{
 		$helper = plugin_load('helper', 'matrixnotifier');
 		
-	    if ($helper->attic_write($event->data['file']))
+		if ($helper->attic_write($event->data['file']))
 		{
 			return;
 		}
