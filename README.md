@@ -1,5 +1,9 @@
 # DokuWiki Matrix Notifier
-Notify DocuWiki page events via Matrix
+Notify DocuWiki page events via [Matrix](https://matrix.org/)
+
+## Example
+
+<img width="780" height="259" src="https://raw.githubusercontent.com/TurtleWilly/dokuwiki-matrix-notifier/master/documentation/example.png">
 
 ## Installation
 
@@ -23,4 +27,4 @@ room | the internal ID for the Matrix room where to post the notifications
 
 Wilhelm/ JPTV.club
 
-This project was loosely forked from the *DokuWiki Discord Notifer* (https://github.com/zteeed/dokuwiki-discord-notifier).
+This project was loosely forked from the *DokuWiki Discord Notifier* (https://github.com/zteeed/dokuwiki-discord-notifier).
