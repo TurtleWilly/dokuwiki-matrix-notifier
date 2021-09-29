@@ -90,10 +90,10 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 
 		$d          = $data[$this->_event];
 		$title      = strip_tags($this->getLang($d['loc_title']));
-		$event      = $user.' '.$this->getLang($d['loc_event']);
+		$useraction = $user.' '.$this->getLang($d['loc_event']);
 
-		$descr_raw  = $title.' · '.$event.' "'.$page.'" ('.$link.')';
-		$descr_html = $d['emoji'].' <strong>'.$title.'</strong> · '.$event.' &quot;<a href="'.$link.'">'.$page.'</a>&quot;';
+		$descr_raw  = $title.' · '.$useraction.' "'.$page.'" ('.$link.')';
+		$descr_html = $d['emoji'].' <strong>'.$title.'</strong> · '.$useraction.' &quot;<a href="'.$link.'">'.$page.'</a>&quot;';
 
 		if (($this->_event != 'delete') && ($this->_event != 'create'))
 		{
