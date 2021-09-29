@@ -8,8 +8,8 @@
  */
 
 $lang['t_created']   = 'New Page Created';
-$lang['t_updated']   = 'New Update';
-$lang['t_minor_upd'] = 'New Minor Update';
+$lang['t_updated']   = 'Update';
+$lang['t_minor_upd'] = 'Minor Update';
 $lang['t_removed']   = 'Page Deleted';
 
 /* TODO: really should have placeholders for the "name" and the "link" for making grammar correct

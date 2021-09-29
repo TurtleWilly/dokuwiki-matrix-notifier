@@ -11,19 +11,19 @@ if (!defined('DOKU_INC')) { die(); }
 
 class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 {
+	CONST __PLUGIN_VERSION__ = '1.2';
+	
 	private $_event   = null;
 	private $_summary = null;
 	private $_payload = null;
 
 	private function valid_namespace()
 	{
-		global $INFO; /* TODO: yikes! */
-
 		$validNamespaces = $this->getConf('namespaces');
 		if (!empty($validNamespaces))
 		{
 			$validNamespacesArr = array_map('trim', explode(',', $validNamespaces));
-			$thisNamespaceArr   = explode(':', $INFO['namespace']);
+			$thisNamespaceArr   = explode(':', $GLOBALS['INFO']['namespace']);
 
 			return in_array($thisNamespaceArr[0], $validNamespacesArr);
 		}
@@ -33,34 +33,23 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 
 	private function check_event($event)
 	{
-		$this->_opt = print_r($event, true); /* TODO: what is this required for exactly? */
-
-		$summary = $event->data['summary'];
-		if (!empty($summary))
-		{
-			$this->_summary = $summary;
-		}
-
 		$etype = $event->data['changeType'];
+
 		if (($etype == 'C') && ($this->getConf('notify_create') == 1))
 		{
 			$this->_event = 'create';
-			return true;
 		}
 		elseif (($etype == 'E') && ($this->getConf('notify_edit') == 1))
 		{
 			$this->_event = 'edit';
-			return true;
 		}
 		elseif (($etype == 'e') && ($this->getConf('notify_edit') == 1) && ($this->getConf('notify_edit_minor') == 1))
 		{
 			$this->_event = 'edit minor';
-			return true;
 		}
 		elseif (($etype == 'D') && ($this->getConf('notify_delete') == 1))
 		{
 			$this->_event = 'delete';
-			return true;
 		}
 		/*
 		elseif (($etype == 'R') && ($this->getConf('notify_revert') == 1))
@@ -69,35 +58,43 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 			return true;
 		}
 		*/
+		else
+		{
+			return false;
+		}
 
-		return false;
+		$summary = $event->data['summary'];
+		if (!empty($summary))
+		{
+			$this->_summary = $summary;
+		}
+
+		return true;
 	}
 
 	private function update_payload($event)
 	{
-		global $INFO; /* TODO: yikes! -> pageinfo() ? */
-
-		$user = strip_tags($INFO['userinfo']['name']);
+		$user = $GLOBALS['INFO']['userinfo']['name'];
 		$link = $this->compose_url($event, null);
-		$page = strip_tags($event->data['id']);
+		$page = $event->data['id'];
 
 		$data = [
 			'create'     => ['loc_title' => 't_created',   'loc_event' => 'e_created',   'emoji' => '📄'],
 			'edit'       => ['loc_title' => 't_updated',   'loc_event' => 'e_updated',   'emoji' => '📝'],
 			'edit minor' => ['loc_title' => 't_minor_upd', 'loc_event' => 'e_minor_upd', 'emoji' => '📝'],
-			'delete'     => ['loc_title' => 't_removed',   'loc_event' => 'e_removed',   'emoji' => "\u{1F5D1}"],  # Note: wastebasket emoji
+			'delete'     => ['loc_title' => 't_removed',   'loc_event' => 'e_removed',   'emoji' => "\u{1F5D1}"],  /* 'Wastebasket' emoji */
 		];
 
 		$d          = $data[$this->_event];
-		$title      = strip_tags($this->getLang($d['loc_title']));
+		$title      = $this->getLang($d['loc_title']);
 		$useraction = $user.' '.$this->getLang($d['loc_event']);
 
 		$descr_raw  = $title.' · '.$useraction.' "'.$page.'" ('.$link.')';
-		$descr_html = $d['emoji'].' <strong>'.$title.'</strong> · '.$useraction.' &quot;<a href="'.$link.'">'.$page.'</a>&quot;';
+		$descr_html = $d['emoji'].' <strong>'.htmlspecialchars($title).'</strong> · '.htmlspecialchars($useraction).' &quot;<a href="'.$link.'">'.htmlspecialchars($page).'</a>&quot;';
 
 		if (($this->_event != 'delete') && ($this->_event != 'create'))
 		{
-			$oldRev = $INFO['meta']['last_change']['date'];
+			$oldRev = $GLOBALS['INFO']['meta']['last_change']['date'];
 
 			if (!empty($oldRev))
 			{
@@ -129,37 +126,18 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 	private function compose_url($event = null, $rev = null)
 	{
 		$page       = $event->data['id'];
-		$userewrite = $this->getConf('userewrite');
+		$userewrite = $GLOBALS['conf']['userewrite']; /* 0 = no rewrite, 1 = htaccess, 2 = internal */
 
-		if ((($userewrite == 1) || ($userewrite == 2)) && $this->getConf('useslash') == true)
+		if ((($userewrite == 1) || ($userewrite == 2)) && $GLOBALS['conf']['useslash'] == true)
 		{
 			$page = str_replace(":", "/", $page);
 		}
 
-		switch($userewrite)
-		{
-			case 0:
-				$url = DOKU_URL."doku.php?id={$page}";  /* TODO: DOKU_URL usage */
-				break;
-			case 1:
-				$url = DOKU_URL.$page;
-				break;
-			case 2:
-				$url = DOKU_URL."doku.php/{$page}";
-				break;
-		}
+		$url = sprintf(['%sdoku.php?id=%s', '%s%s', '%sdoku.php/%s'][$userewrite], DOKU_URL, $page);
 
 		if ($rev != null)
 		{
-			switch($userewrite)
-			{
-				case 0:
-					$url .= "&do=diff&rev={$rev}"; break;
-				case 1:
-				case 2:
-					$url .= "?do=diff&rev={$rev}";
-					break;
-			}
+			$url .= ('&??'[$userewrite])."do=diff&rev={$rev}";
 		}
 
 		return $url;
@@ -173,8 +151,7 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 
 		if (!($homeserver && $roomid && $accesstoken))
 		{
-			/* TODO: error handling, should dump some information about bad config to a log?
-			 */
+			error_log('matrixnotifer: At least one of the required configuration options \'homeserver\', \'room\', or \'accesstoken\' is not set.');
 			return;
 		}
 
@@ -195,7 +172,7 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 			 *  Note: still entirely untested, was full of very obvious bugs, so nobody
 			 *        has ever used this succesfully anyway
 			 */
-			$proxy = $this->getConf('proxy');
+			$proxy = $GLOBALS['conf']['proxy'];
 			if (!empty($proxy['host']))
 			{
 				/* configure proxy address and port
@@ -220,7 +197,7 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 				'Content-type: application/json',
 				'Content-length: '.strlen($json_payload),
-				'User-agent: DocuWiki Matrix Notifier Plugin',  /* TODO: add some version information here? */
+				'User-agent: DocuWiki Matrix Notifier Plugin '.self::__PLUGIN_VERSION__,
 				'Authorization: Bearer '.$accesstoken,
 				'Cache-control: no-cache',
 			));

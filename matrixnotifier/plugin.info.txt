@@ -1,7 +1,7 @@
 base   matrixnotifier
 author Wilhelm/ JPTV.club
 email  n/a
-date   2021-09-28
+date   2021-09-29
 name   Matrix Notifier
 desc   Notify page events via Matrix
 url    https://www.github.com/turtlewilly/dokuwiki-matrix-notifier/
