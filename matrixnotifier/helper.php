@@ -11,7 +11,7 @@ if (!defined('DOKU_INC')) { die(); }
 
 class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 {
-	CONST __PLUGIN_VERSION__ = '1.2';
+	CONST __PLUGIN_VERSION__ = '1.3';
 	
 	private $_event   = null;
 	private $_summary = null;
@@ -75,6 +75,11 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 	private function update_payload($event)
 	{
 		$user = $GLOBALS['INFO']['userinfo']['name'];
+		if (empty($user))
+		{
+			$user = sprintf($this->getLang('anonymous'), gethostbyaddr($_SERVER['REMOTE_ADDR'])); /* TODO: do we need to handle fail safe? */
+		}
+		
 		$link = $this->compose_url($event, null);
 		$page = $event->data['id'];
 
@@ -156,7 +161,8 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 		}
 
 		$homeserver = rtrim(trim($homeserver), '/');
-		$endpoint = $homeserver.'/_matrix/client/r0/rooms/'.$roomid.'/send/m.room.message/'.uniqid('docuwiki', true).'-'.md5(strval(random_int(0, PHP_INT_MAX)));
+		$endpoint = $homeserver.'/_matrix/client/r0/rooms/'.rawurlencode($roomid).'/send/m.room.message/'.uniqid('docuwiki', true).'-'.md5(strval(random_int(0, PHP_INT_MAX)));
+		
 
 		$json_payload = json_encode($this->_payload);
 		if (!is_string($json_payload))
@@ -175,15 +181,13 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 			$proxy = $GLOBALS['conf']['proxy'];
 			if (!empty($proxy['host']))
 			{
-				/* configure proxy address and port
-				 */
+				// configure proxy address and port
 				$proxyAddress = $proxy['host'].':'.$proxy['port'];
 				curl_setopt($ch, CURLOPT_PROXY,          $proxyAddress);
 				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         	
-				/* include username and password if defined
-				 */
+				// include username and password if defined
 				if (!empty($proxy['user']) && !empty($proxy['pass']))
 				{
 					$proxyAuth = $proxy['user'].':'.conf_decodeString($proxy['pass']);
@@ -203,8 +207,22 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 			));
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $json_payload);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			curl_exec($ch);
-        	
+			
+			/* kludge, temp. fix for Let's Encrypt madness.
+			 */
+			if($this->getConf('nosslverify'))
+			{
+				curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			}
+			
+			$r = curl_exec($ch);
+
+			if ($r === false)
+			{
+				error_log('matrixnotifier: curl_exec() failure <'.strval(curl_error($ch)).'>');
+			}
+			
 			curl_close($ch);
 		}
 	}

@@ -22,3 +22,5 @@ $lang['e_removed']   = 'deleted page';
 
 $lang['compare']     = 'Compare Changes';
 $lang['l_summary']   = 'Edit Summary';
+
+$lang['anonymous']   = 'An anonymous user (%s)';

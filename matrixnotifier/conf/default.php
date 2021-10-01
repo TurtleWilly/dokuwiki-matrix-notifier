@@ -8,3 +8,4 @@ $conf['notify_show_summary'] = 1;
 $conf['homeserver']          = '';
 $conf['accesstoken']         = '';
 $conf['room']                = '';
+$conf['nosslverify']         = 0;

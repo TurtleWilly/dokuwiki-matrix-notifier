@@ -8,3 +8,4 @@ $meta['notify_show_summary'] = array('onoff');
 $meta['homeserver']          = array('string');
 $meta['accesstoken']         = array('string');
 $meta['room']                = array('string');
+$meta['nosslverify']         = array('onoff');

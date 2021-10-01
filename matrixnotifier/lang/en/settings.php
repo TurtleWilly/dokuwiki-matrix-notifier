@@ -22,3 +22,4 @@ $lang['notify_show_summary'] = "Display summary when a page is edited";
 $lang['homeserver']          = 'Matrix Homeserver URL';
 $lang['accesstoken']         = 'Access Token';
 $lang['room']                = 'Room (Internal ID "!xxxxxx:matrix.example.com", not a room alias)';
+$lang['nosslverify']         = 'Skip TLS certificate verification <b>(not recommended, insecure!)</b>';
