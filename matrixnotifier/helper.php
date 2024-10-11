@@ -11,7 +11,7 @@ if (!defined('DOKU_INC')) { die(); }
 
 class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 {
-	CONST __PLUGIN_VERSION__ = '1.3';
+	CONST __PLUGIN_VERSION__ = '1.5';
 	
 	private $_event   = null;
 	private $_summary = null;
@@ -75,8 +75,12 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 	private function update_payload($event)
 	{
 		$user = $GLOBALS['INFO']['userinfo']['name'];
+		/* TODO: This doesn't seem to be properly populuated when the user edit comes via XMLRPC, 
+		 *       see: https://github.com/dokuwiki/dokuwiki/issues/3544
+		 */
 		if (empty($user))
 		{
+			/* hotfix */
 			$user = sprintf($this->getLang('anonymous'), gethostbyaddr($_SERVER['REMOTE_ADDR'])); /* TODO: do we need to handle fail safe? */
 		}
 		
@@ -186,7 +190,7 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 				curl_setopt($ch, CURLOPT_PROXY,          $proxyAddress);
 				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        	
+
 				// include username and password if defined
 				if (!empty($proxy['user']) && !empty($proxy['pass']))
 				{
@@ -194,7 +198,7 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 					curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxyAuth );
 				}
 			}
-        	
+
 			/* Submit Payload
 			 */
 			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
@@ -207,7 +211,11 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 			));
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $json_payload);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			
+
+			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); 
+			curl_setopt($ch, CURLOPT_TIMEOUT,        10);
+
+
 			/* kludge, temp. fix for Let's Encrypt madness.
 			 */
 			if($this->getConf('nosslverify'))
@@ -226,7 +234,7 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 			curl_close($ch);
 		}
 	}
-	
+
 	public function sendUpdate($event)
 	{
 		if((strpos($event->data['file'], 'data/attic') === false) && $this->valid_namespace() && $this->check_event($event))
