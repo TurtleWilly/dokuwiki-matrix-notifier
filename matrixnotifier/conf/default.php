@@ -9,3 +9,4 @@ $conf['homeserver']          = '';
 $conf['accesstoken']         = '';
 $conf['room']                = '';
 $conf['nosslverify']         = 0;
+$conf['include_hosts']       = 'off';

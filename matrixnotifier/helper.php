@@ -11,7 +11,7 @@ if (!defined('DOKU_INC')) { die(); }
 
 class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 {
-	CONST __PLUGIN_VERSION__ = '1.5';
+	CONST __PLUGIN_VERSION__ = '1.6';
 	
 	private $_event   = null;
 	private $_summary = null;
@@ -74,16 +74,35 @@ class helper_plugin_matrixnotifier extends \dokuwiki\Extension\Plugin
 
 	private function update_payload($event)
 	{
-		$user = $GLOBALS['INFO']['userinfo']['name'];
+		$user = $GLOBALS['INFO']['userinfo']['name'] ?? null;  /* also works if userinfo is null */
+
 		/* TODO: This doesn't seem to be properly populuated when the user edit comes via XMLRPC, 
 		 *       see: https://github.com/dokuwiki/dokuwiki/issues/3544
 		 */
 		if (empty($user))
 		{
-			/* hotfix */
-			$user = sprintf($this->getLang('anonymous'), gethostbyaddr($_SERVER['REMOTE_ADDR'])); /* TODO: do we need to handle fail safe? */
+			/*  hotfix
+			 */
+			$mode = $this->getConf('include_hosts');
+
+			if ($mode === 'room')
+			{
+				$user = sprintf($this->getLang('anonymous'), gethostbyaddr($_SERVER['REMOTE_ADDR'])); // TODO: do we need to handle fail safe?
+			}
+			else
+			{
+				$user = $this->getLang('anonymous_safe');
+
+				if ($mode === 'log')
+				{
+					/* Note: multiple error log lines my appear in a single message (PHP fpm) when using the 'move' plugin, f.ex., see:
+					 *       https://github.com/php/php-src/issues/10890
+					 */
+					error_log( sprintf("matrixnotifer: Update request from unidentified user (%s) received.", gethostbyaddr($_SERVER['REMOTE_ADDR'])) );
+				}
+			}
 		}
-		
+
 		$link = $this->compose_url($event, null);
 		$page = $event->data['id'];
 

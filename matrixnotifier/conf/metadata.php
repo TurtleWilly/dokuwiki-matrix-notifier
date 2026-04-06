@@ -9,3 +9,5 @@ $meta['homeserver']          = array('string');
 $meta['accesstoken']         = array('string');
 $meta['room']                = array('string');
 $meta['nosslverify']         = array('onoff');
+$meta['include_hosts']       = array('multichoice', '_choices' => array('off', 'log', 'room'));
+ 

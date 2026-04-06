@@ -23,4 +23,9 @@ $lang['e_removed']   = 'deleted page';
 $lang['compare']     = 'Compare Changes';
 $lang['l_summary']   = 'Edit Summary';
 
-$lang['anonymous']   = 'An anonymous user (%s)';
+$lang['anonymous']       = 'An anonymous user (%s)';
+$lang['anonymous_safe']  = 'An anonymous user';
+
+$lang['include_hosts_o_off']   = 'Off';
+$lang['include_hosts_o_log']   = 'Error Log Only';
+$lang['include_hosts_o_room']  = 'Include in Message to Room';
